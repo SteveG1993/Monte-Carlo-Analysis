@@ -52,6 +52,40 @@ h2 {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
+h3 {
+    font-size: 1.2rem;
+    color: #ffd700;
+    margin: 20px 0 15px 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.about-section {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+    border: 2px solid #ffd700;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.about-section p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.about-section p:not(:first-of-type):not(h3 + p) {
+    text-indent: 30px;
+}
+
+.about-section ul {
+    margin: 15px 0 15px 50px;
+    line-height: 1.6;
+}
+
+.about-section li {
+    margin-bottom: 8px;
+}
+
 .parameters-section {
     background: rgba(0, 0, 0, 0.3);
     border-radius: 15px;
