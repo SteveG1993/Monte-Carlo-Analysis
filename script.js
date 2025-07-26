@@ -9,6 +9,15 @@ class MonteCarloSimulation {
         document.getElementById('runSimulation').addEventListener('click', () => this.runSimulation());
         document.getElementById('showUnlikelyOutcomes').addEventListener('change', () => this.updateChart());
         
+        // CSV upload
+        document.getElementById('csvFile').addEventListener('change', (event) => this.handleCSVUpload(event));
+        
+        // Google Sheets button
+        document.getElementById('googleSheetsBtn').addEventListener('click', () => this.handleGoogleSheetsConnection());
+        
+        // Use calculated stats button
+        document.getElementById('useCalculatedStats').addEventListener('click', () => this.useCalculatedStats());
+        
         const inputs = document.querySelectorAll('input[type="number"]');
         inputs.forEach(input => {
             input.addEventListener('input', () => this.clearError(input.id));
@@ -419,6 +428,175 @@ class MonteCarloSimulation {
             }
             <p>${riskExplanation}</p>
         `;
+    }
+
+    // CSV Upload and Processing Methods
+    handleCSVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const csvData = this.parseCSV(e.target.result);
+                const stats = this.calculateStatsFromData(csvData);
+                this.displayCalculatedStats(stats);
+            } catch (error) {
+                alert('Error parsing CSV file. Please check the format and try again.');
+                console.error('CSV parsing error:', error);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    parseCSV(csvText) {
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        
+        // Find column indices
+        const dateIndex = this.findColumnIndex(headers, ['date']);
+        const hoursIndex = this.findColumnIndex(headers, ['hours', 'time']);
+        const winLossIndex = this.findColumnIndex(headers, ['win/loss', 'win/lose', 'result', 'profit']);
+        const buyInIndex = this.findColumnIndex(headers, ['buy in', 'buyin', 'buy-in']);
+        const cashOutIndex = this.findColumnIndex(headers, ['cash out', 'cashout', 'cash-out']);
+        
+        if (hoursIndex === -1) {
+            throw new Error('Hours column not found');
+        }
+        
+        // Need either win/loss column OR both buy-in and cash-out
+        if (winLossIndex === -1 && (buyInIndex === -1 || cashOutIndex === -1)) {
+            throw new Error('Win/Loss column or Buy-in/Cash-out columns not found');
+        }
+
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+            const row = lines[i].split(',').map(cell => cell.trim());
+            if (row.length < headers.length) continue;
+            
+            const hours = parseFloat(row[hoursIndex]);
+            if (isNaN(hours) || hours <= 0) continue;
+            
+            let winLoss;
+            if (winLossIndex !== -1) {
+                winLoss = parseFloat(row[winLossIndex].replace(/[$,]/g, ''));
+            } else {
+                const buyIn = parseFloat(row[buyInIndex].replace(/[$,]/g, ''));
+                const cashOut = parseFloat(row[cashOutIndex].replace(/[$,]/g, ''));
+                winLoss = cashOut - buyIn;
+            }
+            
+            if (isNaN(winLoss)) continue;
+            
+            const hourlyRate = winLoss / hours;
+            data.push({
+                date: dateIndex !== -1 ? row[dateIndex] : null,
+                hours: hours,
+                winLoss: winLoss,
+                hourlyRate: hourlyRate
+            });
+        }
+        
+        if (data.length === 0) {
+            throw new Error('No valid data rows found');
+        }
+        
+        return data;
+    }
+
+    findColumnIndex(headers, possibleNames) {
+        for (let name of possibleNames) {
+            const index = headers.findIndex(h => h.includes(name));
+            if (index !== -1) return index;
+        }
+        return -1;
+    }
+
+    calculateStatsFromData(data) {
+        const totalHours = data.reduce((sum, row) => sum + row.hours, 0);
+        const totalWinLoss = data.reduce((sum, row) => sum + row.winLoss, 0);
+        const hourlyWinRate = totalWinLoss / totalHours;
+        
+        // Calculate standard deviation of hourly rates
+        const hourlyRates = data.map(row => row.hourlyRate);
+        const mean = hourlyRates.reduce((sum, rate) => sum + rate, 0) / hourlyRates.length;
+        const variance = hourlyRates.reduce((sum, rate) => sum + Math.pow(rate - mean, 2), 0) / hourlyRates.length;
+        const standardDeviation = Math.sqrt(variance);
+        
+        return {
+            totalSessions: data.length,
+            totalHours: totalHours,
+            totalWinLoss: totalWinLoss,
+            hourlyWinRate: hourlyWinRate,
+            standardDeviation: standardDeviation,
+            winningSessionsPercent: (data.filter(row => row.winLoss > 0).length / data.length) * 100
+        };
+    }
+
+    displayCalculatedStats(stats) {
+        const statsGrid = document.getElementById('statsGrid');
+        statsGrid.innerHTML = `
+            <div class="stat-item">
+                <div class="stat-label">Total Sessions</div>
+                <div class="stat-value">${stats.totalSessions}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Total Hours</div>
+                <div class="stat-value">${stats.totalHours.toFixed(1)}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Total Win/Loss</div>
+                <div class="stat-value">${this.formatCurrency(stats.totalWinLoss)}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Hourly Win Rate</div>
+                <div class="stat-value">${this.formatCurrency(stats.hourlyWinRate)}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Standard Deviation</div>
+                <div class="stat-value">${this.formatCurrency(stats.standardDeviation)}</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Winning Sessions</div>
+                <div class="stat-value">${stats.winningSessionsPercent.toFixed(1)}%</div>
+            </div>
+        `;
+        
+        // Store calculated stats for use
+        this.calculatedStats = stats;
+        
+        // Show results section
+        document.getElementById('uploadResults').style.display = 'block';
+    }
+
+    useCalculatedStats() {
+        if (!this.calculatedStats) return;
+        
+        const stats = this.calculatedStats;
+        document.getElementById('hourlyWinRate').value = stats.hourlyWinRate.toFixed(2);
+        document.getElementById('standardDeviation').value = stats.standardDeviation.toFixed(2);
+        
+        // Scroll to parameters section
+        document.querySelector('.parameters-section').scrollIntoView({ behavior: 'smooth' });
+        
+        // Clear any existing errors
+        this.clearAllErrors();
+        
+        alert('Parameters updated with your calculated statistics!');
+    }
+
+    handleGoogleSheetsConnection() {
+        // For now, show instructions for Google Sheets integration
+        alert(`Google Sheets Integration Instructions:
+
+1. Export your Google Sheet as CSV:
+   - Open your Google Sheet
+   - Go to File → Download → Comma-separated values (.csv)
+   - Save the file to your computer
+
+2. Use the "Upload CSV File" button above to upload the downloaded file
+
+Note: Direct Google Sheets integration requires API setup and authentication. For now, please use the CSV export method.`);
     }
 }
 

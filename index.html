@@ -23,9 +23,9 @@
             <ul>
                 <li><strong>Starting bankroll</strong> - amount of money allocated to poker. Used to calculate the risk of losing your entire bankroll</li>
                 <li><strong>Hourly win rate</strong> - total winning amount divided by hours of play</li>
-                <li><strong>Standard deviation</strong> - of hourly wins/losses</li>
+                <li><strong>Standard deviation</strong> - measures the variability hourly wins/losses. Use </li>
                 <li><strong>Number of hours</strong> - to simulate</li>
-                <li><strong>Number of simulations</strong> - to run (defaults to 1,000)</li>
+                <li><strong>Number of simulations</strong> - to run (defaults to 100)</li>
             </ul>
             
             <p>Using these parameters, the program runs multiple simulations of poker sessions, projecting potential bankroll trajectories over the specified time horizon. Each simulation is visualized as a line graph: the line goes up when you win and down when you lose. The result is a powerful, data-driven visualization of the variance poker players can expect—even when they have a solid edge.</p>
@@ -33,7 +33,7 @@
             <h3>Visualization and Confidence Intervals</h3>
             <p>The visualization includes individual simulation paths and a shaded <strong>95% confidence interval</strong>.</p>
             
-            <h3>Data Quality Matters</h3>
+            <h3>Record Keeping is Mandatory</h3>
             <p>The quality of the simulation is only as good as the data you feed into it. To get meaningful projections, players must diligently record the results of every session they play—wins and losses alike. The more data you collect, the more accurately your win rate and standard deviation will reflect your past and future results.</p>
             
             <p>I recommend a Google Sheet to track your poker results with these minimum fields:</p>
@@ -97,6 +97,34 @@
             <p>It's worth noting that for players who haven't logged many hours, their statistics will likely evolve over time—especially if they are actively working to improve through study and review. The tool doesn't predict improvement; it models outcomes based on your current measured performance.</p>
             
             <p>This project is a direct result of combining my passion for poker with my background in software development. It's a practical tool that has helped me manage expectations and maintain the perspective required to poker with a long-term mindset.</p>
+        </div>
+        
+        <div class="data-upload-section">
+            <h2>Upload Your Poker Data</h2>
+            <p>Upload a CSV file or connect to Google Sheets to automatically calculate your win rate and standard deviation.</p>
+            
+            <div class="upload-options">
+                <div class="upload-option">
+                    <label for="csvFile" class="upload-button">
+                        📊 Upload CSV File
+                        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                    </label>
+                    <p class="upload-description">CSV should include columns: Date, Hours, Win/Loss (or Buy-in, Cash-out)</p>
+                </div>
+                
+                <div class="upload-option">
+                    <button id="googleSheetsBtn" class="upload-button">
+                        📋 Connect Google Sheets
+                    </button>
+                    <p class="upload-description">Connect to your Google Sheets poker tracking spreadsheet</p>
+                </div>
+            </div>
+            
+            <div class="upload-results" id="uploadResults" style="display: none;">
+                <h3>Calculated Statistics</h3>
+                <div class="stats-grid" id="statsGrid"></div>
+                <button id="useCalculatedStats" class="use-stats-button">Use These Statistics</button>
+            </div>
         </div>
         
         <div class="parameters-section">
