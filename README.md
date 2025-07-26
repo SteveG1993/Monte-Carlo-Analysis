@@ -29,7 +29,7 @@ The visualization is built using the `matplotlib` library, which is included in 
 
 ---
 
-## More Data the Better
+## Record Keeping is Mandatory
 
 The quality of the simulation is only as good as the data you feed into it. To get meaningful projections, players must diligently record the results of every session they play—wins and losses alike. The more data you collect, the more accurately your win rate and standard deviation will reflect your past and future results.
 
